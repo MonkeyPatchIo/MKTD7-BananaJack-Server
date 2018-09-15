@@ -1,0 +1,24 @@
+{
+  "name": "banana-jack-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Igor Laborie <ilaborie@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel src/main/web/index.html",
+    "build": "parcel build src/main/web/index.html --out-dir src/main/resources/public"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.9.7",
+    "typescript": "^3.0.3"
+  },
+  "browserslist": [
+    "last 4 chrome version",
+    "last 2 edge version",
+    "last 4 firefox version",
+    "last 2 safari version"
+  ],
+  "dependencies": {
+    "lit-html": "^0.11.3"
+  }
+}

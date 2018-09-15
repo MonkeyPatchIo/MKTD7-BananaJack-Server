@@ -1,0 +1,14 @@
+ext {
+    feignVersion = '10.0.1'
+    jacksonVersion = '2.9.+'
+    javalinVersion = '2.1.1'
+    log4jVersion = '2.11.1'
+    slf4jVersion = '1.7.25'
+    configVersion = '0.4.0'
+}
+
+
+repositories {
+    jcenter()
+    mavenCentral()
+}

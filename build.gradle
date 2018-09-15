@@ -1,16 +1,31 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.2.61'
+    id 'org.jetbrains.kotlin.jvm' version '1.2.70'
 }
 
-group 'org.ilaborie'
+group 'io.monkeypatch.mktd7'
 version '1.0-SNAPSHOT'
 
-repositories {
-    mavenCentral()
-}
+
+apply from: 'dependencies.gradle'
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    compile "io.javalin:javalin:$javalinVersion"
+
+    compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    compile "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    compile "io.github.openfeign:feign-core:$feignVersion"
+    compile "io.github.openfeign:feign-jackson:$feignVersion"
+    compile "io.github.openfeign:feign-slf4j:$feignVersion"
+
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+
+    compile "io.github.config4k:config4k:$configVersion"
 }
 
 compileKotlin {
@@ -18,4 +33,15 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+
+jar {
+    manifest {
+        attributes "Main-Class": "io.monkeypatch.mktd7.bananajackserver.MainKt"
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
