@@ -15,7 +15,7 @@ const startProgress = () => {
     progress.value = 0;
     timerId = setInterval(() => progress.value += 1, 500);
 };
-const stopProgress = () => {
+export const stopProgress = () => {
     clearInterval(timerId);
     progress.value = 0;
 };

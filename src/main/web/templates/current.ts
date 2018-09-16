@@ -4,14 +4,15 @@ import {repeat} from 'lit-html/directives/repeat';
 
 import {Action, actionLabel, Hand, PlayerWithStatus} from '../models/models';
 import {AppState} from '../models/state';
-import {api, updateState} from './app';
+import {api, stopProgress, updateState} from './app';
 
-const onLeave = (state: AppState) => () =>
+const onLeave = (state: AppState) => () => {
+    stopProgress();
     api.leave(state.current.id, state.me.id)
         .then(() => api.getRooms())
         .then(rooms => updateState({...state, rooms, current: null}))
         .catch(err => updateState({...state, error: err}));
-
+};
 const onAction = (state: AppState, action: Action) => () =>
     api.action(state.current.id, state.me.id, action)
         .then(current => updateState({...state, current}))
