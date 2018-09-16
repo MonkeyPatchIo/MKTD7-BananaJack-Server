@@ -1,5 +1,3 @@
-import {AppState} from './state';
-
 export interface Hand {
     cards: Card[];
     score: number;
@@ -50,7 +48,6 @@ export const actionLabel = (action: Action) => {
 
 export type Move = 'wait' | 'in-game' | 'burst' | 'draw' | 'stay' | 'timeout' ;
 
-export type RoomEventListener = (event: RoomEvent, state: AppState) => void;
 
 export interface RoomEvent {
     type: string;
@@ -62,3 +59,4 @@ export interface RoomEvent {
     winners?: string;
     action?: Move;
 }
+

@@ -1,5 +1,5 @@
-import {Action, Player, Room, RoomEvent, RoomEventListener} from '../models/models';
-import {AppState} from '../models/state';
+import {Action, Player, Room, RoomEvent} from '../models/models';
+import {AppState, RoomEventListener} from '../models/state';
 
 
 export class BackendApi {
@@ -17,8 +17,6 @@ export class BackendApi {
                 readonly listener: RoomEventListener) {
         console.debug('Use', url);
     }
-
-    // TODO WS
     private handle<T>(res: Response): Promise<T> {
         if (res.ok) {
             return res.json();

@@ -1,5 +1,5 @@
-import {PlayerStatus, RoomEvent, RoomEventListener} from '../models/models';
-import {AppState} from '../models/state';
+import {PlayerStatus, RoomEvent} from '../models/models';
+import {AppState, RoomEventListener} from '../models/state';
 import {startProgress, stopProgress} from '../services/progess';
 import {updateState} from './app';
 

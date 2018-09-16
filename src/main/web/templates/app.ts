@@ -9,7 +9,7 @@ import {currentTemplate} from './current';
 import {onEvent} from './events';
 
 
-const url = process.env.BACKEND_URL || 'http://localhost:9898';
+const url = 'http://ilaborie.org:9898';
 export const api = new BackendApi(url, onEvent);
 const main = document.querySelector('main');
 

@@ -301,6 +301,7 @@ form label input:focus {
 	display: grid;
 	grid-template-columns: 2fr 1fr 1fr;
 	grid-template-rows: 2em 1fr 2.5em;
+	grid-auto-flow: dense;
 }
 
 .room-current .player .cards {

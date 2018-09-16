@@ -15,3 +15,5 @@ export const initialState: AppState = {
     current: null,
     lastEvent: null
 };
+
+export type RoomEventListener = (event: RoomEvent, state: AppState) => void;

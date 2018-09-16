@@ -7,7 +7,8 @@
   "scripts": {
     "clean": "rimraf src/main/resources/public",
     "start": "parcel src/main/web/index.html src/main/web/assets/*.png",
-    "build": "npm run clean & NODE_ENV=prod; parcel build src/main/web/index.html src/main/web/assets/*.png --out-dir src/main/resources/public --detailed-report --no-source-maps"
+    "prebuild": "npm run clean",
+    "build": "NODE_ENV=prod; parcel build src/main/web/index.html src/main/web/assets/*.png --out-dir src/main/resources/public --detailed-report --no-source-maps"
   },
   "dependencies": {
     "lit-html": "^0.11.3"
