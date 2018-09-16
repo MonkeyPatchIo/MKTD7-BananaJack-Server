@@ -34,16 +34,18 @@ private val eventModule: Module = SimpleModule().apply {
             when (event) {
                 is TurnStarted        -> {
                     writeNumberField("round", event.round)
+                    writeNumberField("step", event.step)
                     writeObjectField("room", event.room)
                 }
                 is TurnEnded          -> {
                     writeNumberField("round", event.round)
+                    writeNumberField("step", event.step)
                     writeObjectField("room", event.room)
                 }
                 is RoundEnded         -> {
                     writeNumberField("round", event.round)
                     writeObjectField("room", event.room)
-                    writeObjectField("winners", event.winners)
+                    writeStringField("winners", event.winners)
                 }
                 is PlayerJoiningRoom  -> {
                     writeNumberField("roomId", event.roomId)

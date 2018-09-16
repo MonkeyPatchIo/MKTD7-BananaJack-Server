@@ -9,7 +9,7 @@ sealed class CardValue {
     abstract val name: String
 
     companion object {
-        fun fromString(s: String): CardValue = when (s) {
+        operator fun get(s: String): CardValue = when (s) {
             "ACE"   -> Ace
             "KING"  -> King
             "QUEEN" -> Queen
@@ -70,13 +70,14 @@ sealed class CardSuit {
 
     companion object {
 
-        fun fromString(s: String): CardSuit = when (s) {
-            "SPADES"   -> Spades
-            "DIAMONDS" -> Diamonds
-            "CLUBS"    -> Clubs
-            "HEARTS"   -> Hearts
-            else       -> throw IllegalArgumentException("Unexpected card suit: $s")
-        }
+        operator fun get(suit: String): CardSuit =
+            when (suit) {
+                "SPADES"   -> Spades
+                "DIAMONDS" -> Diamonds
+                "CLUBS"    -> Clubs
+                "HEARTS"   -> Hearts
+                else       -> throw IllegalArgumentException("Unexpected card suit: $suit")
+            }
 
     }
 }
@@ -104,7 +105,8 @@ data class Hand(val cards: List<Card> = emptyList()) {
         copy(cards = cards + card)
 
     fun baseMove(): PlayerMove =
-        when (score) {
+        if (cards.isEmpty()) Wait
+        else when (score) {
             in 0..20 -> InGame
             21       -> Stay // BananaJack !
             else     -> Burst

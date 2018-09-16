@@ -37,15 +37,7 @@ interface DeckOfCardsApi {
         val value: String
     ) {
         fun toCard(): Card =
-            Card(
-                code,
-                CardValue.fromString(
-                    value
-                ),
-                CardSuit.fromString(
-                    suit
-                )
-            )
+            Card( code, CardValue[value],CardSuit[suit])
 
     }
 

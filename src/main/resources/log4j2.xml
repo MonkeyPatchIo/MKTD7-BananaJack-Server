@@ -17,13 +17,17 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <!--<PatternLayout pattern="%highlight{%d [%t] %-5level: %msg%n%throwable}"/>-->
-            <PatternLayout pattern="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} %highlight{${LOG_LEVEL_PATTERN:-%5p}}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=blue, DEBUG=green , TRACE=black} [%15.15t] %style{%-40.40C{1.}}{cyan} : %m%n"/>
+            <PatternLayout pattern="%d{DEFAULT} %highlight{${LOG_LEVEL_PATTERN:-%5p}}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=blue, DEBUG=green , TRACE=black} [%15.15t] %style{%c}{cyan} : %m%n"/>
         </Console>
     </Appenders>
     <Loggers>
         <Root level="INFO">
             <AppenderRef ref="Console"/>
         </Root>
+        <Logger name="org.eclipse" level="WARN"/>
+        <Logger name="io.javalin" level="INFO"/>
         <Logger name="feign" level="DEBUG"/>
+        <Logger name="io.monkeypatch" level="ALL"/>
+        <Logger name="room" level="ALL"/>
     </Loggers>
 </Configuration>

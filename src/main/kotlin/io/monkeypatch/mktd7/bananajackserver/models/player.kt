@@ -4,15 +4,20 @@ package io.monkeypatch.mktd7.bananajackserver.models
 data class Player(val id: String, val name: String, val score: Int)
 
 
-data class PlayerStatus(val hand: Hand = Hand(), val move: PlayerMove = Wait) {
+data class PlayerStatus(
+    val hand: Hand = Hand(),
+    val move: PlayerMove = hand.baseMove()
+) {
+    fun drawOne(cards: List<Card>): Pair<PlayerStatus, List<Card>> =
+        if (move == Draw) PlayerStatus(hand + cards.first()) to cards.drop(1)
+        else this to cards
 
     val canDo: List<PlayerMove> by lazy {
         when (move) {
             is Wait -> emptyList()
-            InGame  -> if (hand.score == 21) emptyList() else listOf(
-                Draw,
-                Stay
-            )
+            InGame  ->
+                if (hand.score == 21) emptyList()
+                else listOf(Draw, Stay)
             Burst   -> emptyList()
             Draw    -> emptyList()
             Stay    -> emptyList()

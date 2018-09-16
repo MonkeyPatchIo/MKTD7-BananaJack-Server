@@ -14,7 +14,7 @@ export interface Room {
     id: number;
     name: string;
     players: PlayerWithStatus[];
-    bank: Hand;
+    bank: PlayerStatus;
     full: boolean;
 }
 
@@ -48,20 +48,17 @@ export const actionLabel = (action: Action) => {
 };
 
 
-export type Move = 'wait' |
-    'in-game' |
-    'burst' |
-    'draw' |
-    'stay' |
-    'timeout' ;
+export type Move = 'wait' | 'in-game' | 'burst' | 'draw' | 'stay' | 'timeout' ;
 
 export type RoomEventListener = (event: RoomEvent, state: AppState) => void;
 
 export interface RoomEvent {
     type: string;
     round?: number;
+    step?: number;
     room?: Room;
-    roomId?: Room;
-    winners?: Player[]
-    action?: PlayerStatus
+    roomId?: number;
+    player?: Player;
+    winners?: string;
+    action?: Move;
 }

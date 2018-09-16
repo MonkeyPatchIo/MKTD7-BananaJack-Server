@@ -4,6 +4,4 @@ build/
 .cache/
 node_modules/
 
-src/main/resources/public/*.js
-src/main/resources/public/*.html
-src/main/resources/public/*.css
+src/main/resources/public/

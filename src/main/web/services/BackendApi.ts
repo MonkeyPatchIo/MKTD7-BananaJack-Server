@@ -4,7 +4,6 @@ import {AppState} from '../models/state';
 
 export class BackendApi {
 
-    // private roomWs: { [index: number]: WebSocket } = {};
     private _state: AppState;
     get state(): AppState {
         return this._state;
@@ -14,9 +13,9 @@ export class BackendApi {
         this._state = newState;
     }
 
-
     constructor(readonly url: string,
                 readonly listener: RoomEventListener) {
+        console.debug('Use', url);
     }
 
     // TODO WS
@@ -46,26 +45,20 @@ export class BackendApi {
     private registerWS(roomId: number, playerId: string) {
         const wsUrl = this.url.replace('http://', 'ws://');
         const ws = new WebSocket(wsUrl + `/ws/${roomId}`);
-        // this.roomWs[roomId] = ws;
 
         // Register events
-        ws.onopen = (event: Event) => {
-            console.log('WS open', event);
+        ws.onopen = () => {
+            console.debug('WS open', roomId);
             // Register to room
             ws.send(JSON.stringify({playerId}));
         };
         ws.onmessage = (event: MessageEvent) => {
-            console.log('WS message', event);
+            console.debug('WS message', event.data);
             const roomEvent = JSON.parse(event.data) as RoomEvent;
             this.listener(roomEvent, this.state);
         };
-        ws.onclose = (event: CloseEvent) => {
-            console.log('WS close', event);
-            // this.roomWs[roomId] = null;
-        };
-        ws.onerror = (event: Event) => {
-            console.error('WS error', event);
-        };
+        ws.onclose = () => console.info('WS close');
+        ws.onerror = (event: Event) => console.error('WS error', event);
     }
 
     // Auth

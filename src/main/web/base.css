@@ -9,27 +9,28 @@
 body {
 	background-color: var(--green, green);
 	color: var(--greenText, white);
-	font-family: sans-serif;
 	padding: 0;
 	margin: 0;
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 body > header, body > footer {
 	margin: 0;
 	padding: .25rem;
 	text-align: center;
+	font-family: 'Fascinate', cursive;
 	background: rgba(0, 0, 0, .25);
 }
 
 body > header {
-	font-family: 'Fascinate', cursive;
 	font-size: 1.25em;
 	flex-shrink: 0;
 	box-shadow: 0 .125em .125em rgba(0, 0, 0, .5);
 	padding-bottom: 0;
+	position: relative;
 }
 
 h1 {
@@ -42,7 +43,7 @@ h1::before, h1::after {
 	content: '🍌';
 }
 
-/*main*/
+/*progress*/
 
 progress {
 	width: 100%;
@@ -52,6 +53,10 @@ progress {
 	border: none;
 	height: .25rem;
 	animation: all 1s;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
 }
 
 progress::-webkit-progress-bar {
@@ -66,6 +71,7 @@ progress::-moz-progress-bar {
 	background: var(--yellow, yellow);
 }
 
+/*main*/
 main {
 	flex: 1 1 auto;
 	display: flex;
@@ -102,6 +108,8 @@ main .error::before {
 	margin-right: .5em;
 }
 
+/*button*/
+
 button {
 	font-size: 1.2rem;
 	border: .125em solid rgba(0, 0, 0, .25);
@@ -111,6 +119,7 @@ button {
 	animation: all .4s;
 	min-height: 1.8rem;
 	margin: .25em;
+	background: hsla(0, 100%, 100%, .85);
 }
 
 button:hover {
@@ -156,8 +165,14 @@ form label input:focus {
 	background: hsla(0, 100%, 100%, .75);
 }
 
-/*rooms*/
+/*me*/
+.logged {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
 
+/*rooms*/
 .rooms {
 	padding: 1rem .5rem;
 	list-style: none;
@@ -182,6 +197,10 @@ form label input:focus {
 	background: rgba(0, 0, 0, .25);
 }
 
+.rooms .room .name {
+	font-family: 'Fascinate', sans-serif;
+}
+
 .rooms .room .status {
 	flex-grow: 1;
 	text-align: center;
@@ -193,23 +212,37 @@ form label input:focus {
 	display: flex;
 	justify-content: space-between;
 	font-size: 1.2em;
-	padding: .125em;
 	border-bottom: .125em solid rgba(0, 0, 0, .25);
 	text-shadow: 1px 1px 2px black;
+	background: rgba(0, 0, 0, .25);
+	box-shadow: 0 0 0 .25em rgba(0, 0, 0, .25);
+	align-items: center;
 }
 
+.room-current header .name {
+	font-family: 'Fascinate', cursive;
+	font-size: 1.5em;
+}
+
+/*room winner*/
 .room-current .winner {
 	color: var(--yellow, yellow);
+}
+
+.room-current .winner::before, .room-current .winner::after {
+	content: '🎊';
+	margin: 0 .5em;
 }
 
 .room-current .winner::before {
 	content: 'Winner: ';
 }
 
+/*room players*/
 .room-current .players {
 	display: grid;
 	margin: .5em 0;
-	grid-template-columns: repeat(auto-fill, minmax(16em, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(24em, 1fr));
 	grid-gap: 1em;
 }
 
@@ -233,8 +266,33 @@ form label input:focus {
 	grid-column: 1;
 }
 
+.room-current .player .move {
+	text-align: right;
+}
+
 .room-current .player.timeout {
 	opacity: .25;
+}
+.room-current .player.timeout .move::before {
+	content: '💤';
+}
+.room-current .player.draw .move::before {
+	content: '▶️';
+}
+.room-current .player.stay .move::before {
+	content: '⏹';
+}
+.room-current .player.burst .move::before {
+	content: '💣';
+}
+.room-current .player.burst {
+	color: var(--red, red);
+}
+.room-current .player.wait .move::before {
+	content: '😴';
+}
+.room-current .player.in-game .move::before {
+	content: '⏰';
 }
 
 .room-current .player {
@@ -265,12 +323,12 @@ form label input:focus {
 }
 
 .room-current .player .cards .card img {
-	/*max-width: 100%;*/
+	max-height: 12em;
 }
 
 .room-current .player .actions {
 	grid-column: 1 / 4;
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-around;
 	border-top: .125em solid rgba(0, 0, 0, .25);
 }

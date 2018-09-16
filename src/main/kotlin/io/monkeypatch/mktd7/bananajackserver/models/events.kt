@@ -26,9 +26,9 @@ sealed class OutputRoomEvent : RoomEvent {
     }
 }
 
-data class TurnStarted(val round: Int, val room: Room) : OutputRoomEvent()
-data class TurnEnded(val round: Int, val room: Room) : OutputRoomEvent()
-data class RoundEnded(val round: Int, val room: Room, val winners: List<Player>) : OutputRoomEvent()
+data class TurnStarted(val round: Int, val step: Int, val room: Room) : OutputRoomEvent()
+data class TurnEnded(val round: Int, val step: Int, val room: Room) : OutputRoomEvent()
+data class RoundEnded(val round: Int, val room: Room, val winners: String) : OutputRoomEvent()
 data class PlayerJoiningRoom(val roomId: Int, val player: Player) : OutputRoomEvent()
 data class PlayerLeavingRoom(val roomId: Int, val player: Player) : OutputRoomEvent()
 data class PlayerActionInRoom(val roomId: Int, val player: Player, val action: PlayerMove) : OutputRoomEvent()

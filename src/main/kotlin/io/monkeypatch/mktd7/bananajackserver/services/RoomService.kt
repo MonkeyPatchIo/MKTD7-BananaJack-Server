@@ -1,25 +1,21 @@
 package io.monkeypatch.mktd7.bananajackserver.services
 
-import io.monkeypatch.mktd7.bananajackserver.millis
+import io.monkeypatch.mktd7.bananajackserver.jsonMapper
 import io.monkeypatch.mktd7.bananajackserver.models.*
-import io.monkeypatch.mktd7.bananajackserver.peek
-import io.monkeypatch.mktd7.bananajackserver.schedule
 import io.monkeypatch.mktd7.bananajackserver.seconds
+import io.monkeypatch.mktd7.bananajackserver.services.EventLoop.immediate
+import io.monkeypatch.mktd7.bananajackserver.services.EventLoop.longTimeout
+import io.monkeypatch.mktd7.bananajackserver.services.EventLoop.schedule
+import io.monkeypatch.mktd7.bananajackserver.services.EventLoop.shortTimeout
+import io.monkeypatch.mktd7.bananajackserver.services.PlayerService.dispatchRoomAndNotPlayer
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.CompletableFuture
 
 
 class RoomService(var room: Room) {
-    private val logger = LoggerFactory.getLogger(room.name)
-    private val ec = Executors.newScheduledThreadPool(1)
-    private var round = 0
-    private var step = 0
-    private var deckId: String? = null
 
-    private val longTimeout = 30.seconds
-    private val shortTimeout = 2.seconds
-
+    private val logger = LoggerFactory.getLogger("room.${room.id}")
+    private var state = RoomState()
 
     fun join(player: Player): Room {
         logger.info("join $player")
@@ -28,12 +24,10 @@ class RoomService(var room: Room) {
 
         // Notify other members
         val event = PlayerJoiningRoom(room.id, player)
-        PlayerService.dispatch(event) { (playerId, roomId) ->
-            roomId == room.id && playerId != player.id
-        }
+        dispatchRoomAndNotPlayer(room.id, player.id, event)
 
-
-        ec.schedule(shortTimeout) { this.beginTurn() } // TODO only if not started
+        if (!state.started)
+            schedule(shortTimeout) { this.beginTurn() }
 
         return room
     }
@@ -44,11 +38,10 @@ class RoomService(var room: Room) {
 
         // Notify other members
         val event = PlayerActionInRoom(room.id, player, action)
-        PlayerService.dispatch(event) { (playerId, roomId) ->
-            roomId == room.id && playerId != player.id
-        }
-        // FIXME fast nextSteo
-        // room.players.none { it.status.move == InGame }
+        dispatchRoomAndNotPlayer(room.id, player.id, event)
+
+        // Maybe everybody played
+        this.waitingPlayer(state.round, state.step)
 
         return room
     }
@@ -61,140 +54,119 @@ class RoomService(var room: Room) {
         PlayerService.closeSession(player.id, room.id)
 
         // Notify other members
-        PlayerService.dispatch(
-            PlayerLeavingRoom(
-                room.id,
-                player
-            )
-        ) { (playerId, roomId) ->
-            roomId == room.id && playerId != player.id
-        }
+        val event = PlayerLeavingRoom(room.id, player)
+        dispatchRoomAndNotPlayer(room.id, player.id, event)
+
+        // Maybe everybody played
+        this.waitingPlayer(state.round, state.step)
+
         return room
     }
 
-
     private fun beginTurn() {
         room = room.cleanBeforeTurn()
-        if (room.canBeginTurn()) {
-            // Init
-            round += 1
-            step = 0
-            val id = DeckOfCardsApi.api.newDeck().id
-            deckId = id
-            logger.info("BeginTurn #$round, deckId: $id")
-
-            // Draw cards
-            val cards = DeckOfCardsApi.api.draw(id, (room.players.size + 1) * 2)
-                .cards
-                .map { it.toCard() }
-                .chunked(2)
-            room = room.draw(cards)
-
-            // Notify players
-            PlayerService.dispatchRoom(
-                room.id,
-                TurnStarted(
-                    round,
-                    room
-                )
-            )
-
-            // Schedule Next
-            ec.schedule(longTimeout) { nextStep() }
-        } else {
+        if (!room.canBeginTurn()) {
             logger.warn("Skip turn: no player")
+            return
         }
+
+        val id = DeckOfCardsApi.api.newDeck().id
+        state = state.start(id)
+        val (_, currentRound, currentStep) = state
+
+        logger.info("BeginTurn #${state.round}, deckId: $id")
+
+        // Draw cards
+        val hands = drawHands(id, room.players.size + 1)
+        room = room.drawHands(hands)
+
+        // Notify players
+        PlayerService.dispatchRoom(room.id, TurnStarted(currentRound, currentStep, room))
+
+        // Scheduling
+        schedule(shortTimeout) { waitingPlayer(currentRound, currentStep) }
+        schedule(longTimeout) { timeoutPlayers(currentRound, currentStep) }
     }
 
-    // FIXME optim: nextTimeout (use round/step to check if obsolete)
-    // on action if nobbody in InGame => nextStep
+    private fun timeoutPlayers(roundExpected: Int, stepExpected: Int) {
+        if (state.round != roundExpected || stepExpected != state.step) {
+            logger.warn("Skipped timeoutPlayers for #$roundExpected.$stepExpected")
+            return
+        }
 
-    private fun nextStep() {
-        step += 1
-        logger.info("Turn #$round.$step")
+        logger.info("Timeout #$roundExpected.$stepExpected")
+        room = room.timeout()
+        immediate { endTurn(roundExpected, stepExpected) }
+    }
+
+    private fun waitingPlayer(roundExpected: Int, stepExpected: Int) {
+        if (state.round != roundExpected || stepExpected != state.step) {
+            logger.warn("Skipped waitingPlayer for #$roundExpected.$stepExpected")
+            return
+        }
+
+        logger.debug("waitingPlayer #$roundExpected.$stepExpected")
+        val waitingForPlayer = room.players.none { it.status.move == InGame }
+        if (waitingForPlayer)
+            schedule(shortTimeout) { nextStep(roundExpected, stepExpected) }
+    }
+
+    private fun nextStep(roundExpected: Int, stepExpected: Int) {
+        if (state.round != roundExpected || stepExpected != state.step) {
+            logger.warn("Skipped nextStep for #$roundExpected.$stepExpected")
+            return
+        }
 
         val listDrawing = room.listDrawing()
         val bankDraw = room.bankAction() == Draw
         val nbCards = listDrawing.size + (if (bankDraw) 1 else 0)
-        var cards = DeckOfCardsApi.api.draw(deckId!!, nbCards)
-            .cards
-            .map { it.toCard() }
+        val cards = drawCards(state.deckId!!, nbCards)
 
         val endTurn = cards.isEmpty()
         if (endTurn) {
-            logger.info("Turn #$round.$step -> Finished")
-            ec.schedule(shortTimeout) { endTurn() }
+            logger.info("Turn #$roundExpected.$stepExpected -> Finished")
+            schedule(shortTimeout) { endTurn(roundExpected, stepExpected) }
         } else {
-            // Bank
-            if (bankDraw) {
-                val (card, tail) = cards.peek()
-                cards = tail
-                room = room.copy(bank = room.bank + card)
-            }
-            room = room.playerDraw(cards)
+            state = state.step()
+            val (_, newRound, newStep) = state
+
+            logger.info("Turn #$newRound.$newStep")
+            room = room.playerDraw(cards, bankDraw)
 
             // Notify
-            PlayerService.dispatchRoom(
-                room.id,
-                TurnEnded(
-                    round,
-                    room
-                )
-            )
+            PlayerService.dispatchRoom(room.id, TurnEnded(newRound, newStep, room))
 
             // NextStep
-
-            val timeout = if (room.players.none { it.status.move == InGame }) shortTimeout else longTimeout
-            ec.schedule(timeout) { nextStep() } // FIXME nextTimeout
+            schedule(shortTimeout) { waitingPlayer(newRound, newStep) }
+            schedule(longTimeout) { timeoutPlayers(newRound, newStep) }
         }
     }
 
-    private fun endTurn() {
-        val bankScore = room.bank.score
-        val playerScores = room.scores()
-        val playerBestScore = playerScores
-            .filter { it.second <= 21 }
-            .maxBy { it.second }?.second ?: -1
+    private fun endTurn(roundExpected: Int, stepExpected: Int) {
+        if (state.round != roundExpected || stepExpected != state.step) {
+            logger.warn("Skipped endTurn for #$roundExpected.$stepExpected")
+            return
+        }
 
-        val winners = if (bankScore > 21 || playerBestScore >= bankScore) {
-            val w = playerScores.asSequence()
-                .filter { it.second == playerBestScore }
-                .map { it.first }
-                .map { PlayerService.increment(it) }
-                .toList()
-            room = room.updatePlayers()
-            w
-        } else emptyList()
+        state = state.stop()
+        val winners = room.winners()
+        room = room.updatePlayers()
 
-        logger.info("End Turn #$round, winner: ${if (winners.isEmpty()) "Bank" else winners.joinToString(",")}")
+        val sWinner = if (winners.isEmpty()) "Bank" else winners.joinToString(", ") { it.name }
+        logger.info("End Turn #$roundExpected, winners: $sWinner")
 
         // Notify
-        PlayerService.dispatchRoom(
-            room.id,
-            RoundEnded(
-                round,
-                room,
-                winners
-            )
-        )
+        PlayerService.dispatchRoom(room.id, RoundEnded(roundExpected, room, sWinner))
 
         // Next Turn
-        ec.schedule(shortTimeout) { beginTurn() }
+        schedule(5.seconds) { beginTurn() }
     }
 
     companion object {
 
         private val roomServices: Map<Int, RoomService> =
             IntRange(1, 16)
-                .map { id ->
-                    id to Room(
-                        id,
-                        "Room #${id.toString().padStart(
-                            2,
-                            '0'
-                        )}"
-                    )
-                }
+                .map { id -> id to Room(id, "Room #${id.toString().padStart(2, '0')}") }
                 .map { (index, room) -> index to RoomService(room) }
                 .toMap()
 
@@ -203,29 +175,70 @@ class RoomService(var room: Room) {
                 .map { it.room }
                 .sortedBy { it.name }
 
-        private fun withRoomService(roomId: Int, block: RoomService.() -> Room): ScheduledFuture<Room> {
+        private fun withRoomService(roomId: Int, block: RoomService.() -> Room): CompletableFuture<String> {
             val roomService = roomServices[roomId] ?: throw NoSuchElementException("Room '$roomId' not found")
-            return roomService.ec.schedule(1.millis) {
-                roomService.block()
-            }
+            return immediate { roomService.block() }
+                .thenApply { jsonMapper.writeValueAsString(it) }
         }
 
-        fun join(event: PlayerJoin): ScheduledFuture<Room> =
-            withRoomService(event.roomId) { join(PlayerService[event.playerId]) }
-
-        fun leave(event: PlayerLeave): ScheduledFuture<Room> =
+        fun join(event: PlayerJoin) =
             withRoomService(event.roomId) {
-                leave(
-                    PlayerService[event.playerId]
-                )
+                join(PlayerService[event.playerId])
             }
 
-        fun action(event: PlayerAction): ScheduledFuture<Room> =
+        fun leave(event: PlayerLeave) =
             withRoomService(event.roomId) {
-                action(
-                    PlayerService[event.playerId],
-                    event.action
-                )
+                leave(PlayerService[event.playerId])
             }
+
+        fun action(event: PlayerAction) =
+            withRoomService(event.roomId) {
+                action(PlayerService[event.playerId], event.action)
+            }
+
+
+        private fun drawHands(deckId: String, nbHands: Int): List<Hand> =
+            DeckOfCardsApi.api.draw(deckId, nbHands * 2)
+                .cards.asSequence()
+                .map { it.toCard() }
+                .chunked(2)
+                .map { Hand(it) }
+                .toList()
+
+        private fun drawCards(deckId: String, nbCards: Int): List<Card> =
+            DeckOfCardsApi.api.draw(deckId, nbCards)
+                .cards.asSequence()
+                .map { it.toCard() }
+                .toList()
+
+        fun leaveAll(playerId: String) =
+            PlayerService.findPlayer(playerId)
+                ?.also {
+                    roomServices.values
+                        .forEach { roomService ->
+                            immediate { roomService.leave(it) }
+                        }
+                }
+
+        private data class RoomState(
+            val started: Boolean = false,
+            val round: Int = 0,
+            val step: Int = 0,
+            val deckId: String? = null
+        ) {
+            fun start(deckId: String) =
+                copy(
+                    started = true,
+                    round = round + 1,
+                    step = 0,
+                    deckId = deckId
+                )
+
+            fun step() =
+                copy(step = step + 1)
+
+            fun stop() =
+                copy(started = false)
+        }
     }
 }

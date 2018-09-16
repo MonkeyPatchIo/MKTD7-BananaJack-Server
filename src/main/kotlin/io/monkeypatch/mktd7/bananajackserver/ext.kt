@@ -6,33 +6,23 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.TextNode
+import java.security.MessageDigest
 import java.time.Duration
-import java.util.concurrent.Callable
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-
-
-fun <T> List<T>.peek(): Pair<T, List<T>> {
-    if (isEmpty()) throw NoSuchElementException("Empty list")
-    return first() to drop(1)
-}
-
-fun <T> ScheduledExecutorService.schedule(duration: Duration, block: () -> T): ScheduledFuture<T> =
-    this.schedule(Callable<T> {
-        try {
-            return@Callable block()
-        } catch (e: Throwable) {
-            e.printStackTrace()
-            throw e
-        }
-    }, duration.toMillis(), TimeUnit.MILLISECONDS)
 
 val Int.seconds: Duration
     get() = Duration.ofSeconds(toLong())
 
 val Int.millis: Duration
     get() = Duration.ofMillis(toLong())
+
+
+val String.sha1: String
+    get() {
+        val md = MessageDigest.getInstance("SHA-1")
+        md.reset()
+        val bytes = md.digest(this.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
 
 // Jackson
 

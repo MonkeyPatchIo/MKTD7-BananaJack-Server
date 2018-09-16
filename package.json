@@ -5,11 +5,16 @@
   "author": "Igor Laborie <ilaborie@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "parcel src/main/web/index.html",
-    "build": "NODE_ENV=prod; parcel build src/main/web/index.html --out-dir src/main/resources/public --detailed-report --no-source-maps"
+    "clean": "rimraf src/main/resources/public",
+    "start": "parcel src/main/web/index.html src/main/web/assets/*.png",
+    "build": "npm run clean & NODE_ENV=prod; parcel build src/main/web/index.html src/main/web/assets/*.png --out-dir src/main/resources/public --detailed-report --no-source-maps"
+  },
+  "dependencies": {
+    "lit-html": "^0.11.3"
   },
   "devDependencies": {
     "parcel-bundler": "^1.9.7",
+    "rimraf": "^2.6.2",
     "typescript": "^3.0.3"
   },
   "browserslist": [
@@ -17,8 +22,5 @@
     "last 2 edge version",
     "last 4 firefox version",
     "last 2 safari version"
-  ],
-  "dependencies": {
-    "lit-html": "^0.11.3"
-  }
+  ]
 }

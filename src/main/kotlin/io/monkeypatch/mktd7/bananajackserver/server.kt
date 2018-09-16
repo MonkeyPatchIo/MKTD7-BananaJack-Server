@@ -21,9 +21,9 @@ fun server(serverConfig: ServerConfig): Javalin =
             ctx.status(400).result(e.localizedMessage)
         }
         .exception(ExecutionException::class.java) { e, ctx ->
-            when(e.cause) {
-                null -> ctx.status(400).result(e.localizedMessage)
+            when (e.cause) {
+                null                        -> ctx.status(400).result(e.localizedMessage)
                 is IllegalArgumentException -> ctx.status(400).result(e.localizedMessage)
-                is NoSuchElementException -> ctx.status(404).result(e.localizedMessage)
+                is NoSuchElementException   -> ctx.status(404).result(e.localizedMessage)
             }
         }
