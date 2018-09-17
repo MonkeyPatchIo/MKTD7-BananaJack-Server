@@ -20,9 +20,9 @@ data class Room(
         copy(
             bank = bank.copy(hand = Hand()),
             players =
-             players.map { (p, _) ->
-                 PlayerWithStatus(PlayerService[p.id], PlayerStatus(Hand(), InGame))
-             }
+            players.map { (p, _) ->
+                PlayerWithStatus(PlayerService[p.id], PlayerStatus(Hand(), InGame))
+            }
         )
 
     fun join(player: Player): Room =
@@ -60,7 +60,6 @@ data class Room(
                 if (anyDraw) baseIA(bank.hand.score)
                 else {
                     val playerBestScore = scores()
-                        .filter { it.second <= 21 }
                         .maxBy { it.second }?.second ?: -1
                     when {
                         bank.hand.score > 21              -> Burst
@@ -100,25 +99,22 @@ data class Room(
         )
     }
 
-    private fun scores(): List<Pair<String, Int>> =
+    private fun scores(): List<Pair<Player, Int>> =
         players.asSequence()
             .filter { (_, status) -> status.move == Stay || status.move == InGame }
-            .map { (player, status) -> player.id to status.hand.score }
+            .map { (player, status) -> player to status.hand.score }
+            .filter { (_, score) -> score <= 21 }
             .toList()
 
-    fun winners(): List<Player> {
+    fun winners(): Pair<Int, List<Player>> {
         val bankScore = bank.hand.score
         val playerScores = scores()
-        val playerBestScore = playerScores
-            .filter { it.second <= 21 }
-            .maxBy { it.second }?.second ?: -1
+        val bestScore = (playerScores.map { it.second } + bankScore).max() ?: -1
 
-        return if (bankScore > 21 || playerBestScore >= bankScore) {
-            playerScores.asSequence()
-                .filter { it.second == playerBestScore }
-                .map { PlayerService.increment(it.first, it.second) }
-                .toList()
-        } else emptyList()
+        return bestScore to (playerScores
+            .filter { (_, score) -> score == bestScore }
+            // Update scores
+            .map { (player, score) -> PlayerService.increment(player.id, score) })
     }
 
     fun updatePlayers(): Room =

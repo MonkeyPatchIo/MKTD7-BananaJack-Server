@@ -396,6 +396,19 @@ class BackendApi {
 </body>
 ```
 
+#### Login Page
+
+```html
+<main>
+    <section>
+      <form name="login">
+        <label> Name <input name="name" value="" required="" placeholder="Enter your name"></label>
+        <button>Login</button>
+      </form>
+    </section>
+</main>
+```
+
 #### Rooms Page
 
 ```html
@@ -424,7 +437,7 @@ class BackendApi {
 </main>
 ```
 
-### Room Page 
+### Current Room Page 
 
 ```html
 <section>
