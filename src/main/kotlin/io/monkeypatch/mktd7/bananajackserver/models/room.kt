@@ -100,27 +100,28 @@ data class Room(
     }
 
     private fun scores(): List<Pair<Player, Int>> =
-        players.asSequence()
-            .filter { (_, status) -> status.move == Stay || status.move == InGame }
+        players
+            .filter { (_, status) -> status.move != Timeout }
             .map { (player, status) -> player to status.hand.score }
             .filter { (_, score) -> score <= 21 }
-            .toList()
 
-    fun winners(): Pair<Int, List<Player>> {
-        val bankScore = bank.hand.score
+    fun winners(): Triple<Int, List<Player>, Boolean> {
+        val bankScore = if (bank.hand.score > 21) -1 else bank.hand.score
         val playerScores = scores()
-        val bestScore = (playerScores.map { it.second } + bankScore).max() ?: -1
+        val bestPlayerScore = playerScores.maxBy { it.second }?.second ?: -1
 
-        return bestScore to (playerScores
-            .filter { (_, score) -> score == bestScore }
-            // Update scores
-            .map { (player, score) -> PlayerService.increment(player.id, score) })
+        val bestScore = Math.max(bankScore, bestPlayerScore)
+        val playersWin = playerScores.filter { it.second == bestScore }.map { it.first }
+        val bankWin = bankScore == bestScore
+
+        return Triple(bestScore, playersWin, bankWin)
     }
 
-    fun updatePlayers(): Room =
+    fun updatePlayers(bestScore: Int): Room =
         copy(players = players
-            .filterNot { it.status.move == Timeout }
-            .map { (player, _) ->
+            .filter { it.status.move != Timeout }
+            .map { (player, status) ->
+                if (status.hand.score == bestScore) PlayerService.increment(player.id, bestScore)
                 PlayerWithStatus(PlayerService[player.id], PlayerStatus(move = InGame))
             })
 

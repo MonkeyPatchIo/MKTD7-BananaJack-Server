@@ -150,13 +150,13 @@ class RoomService(var room: Room) {
 
         state = state.stop()
 
-        val (score, winners) = room.winners()
-        val bankWin = (room.bank.hand.score == score)
-        val names = winners.map { it.name }
+        val(bestScore, playersWin, bankWin)= room.winners()
+
+        val names = playersWin.map { it.name }
         val sWinner = (if (bankWin) names + "Bank" else names).joinToString(", ")
         logger.info("End Turn #$roundExpected, winners: $sWinner")
 
-        room = room.updatePlayers()
+        room = room.updatePlayers(bestScore)
 
         // Notify
         PlayerService.dispatchRoom(room.id, RoundEnded(roundExpected, room, sWinner))
